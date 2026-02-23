@@ -201,7 +201,7 @@ function EmptyChatState({ onStartChat }: { onStartChat: () => void }) {
       </div>
       <div className="max-w-sm space-y-2">
         <h2 className="text-xl font-normal text-foreground">
-          Welcome to Google Chat
+          Welcome to Chats
         </h2>
         <p className="text-sm text-muted-foreground leading-relaxed">
           Send messages, share files, and collaborate with people. Select a conversation from the sidebar or start a new one.

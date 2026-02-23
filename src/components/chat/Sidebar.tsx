@@ -72,7 +72,7 @@ export function Sidebar({
     <div className="flex h-full flex-col bg-sidebar">
       {/* Header */}
       <div className="flex items-center justify-between px-4 py-3">
-        <h1 className="text-lg font-medium text-sidebar-foreground">Chat</h1>
+        <h1 className="text-lg font-medium text-sidebar-foreground">Google Chat</h1>
         <div className="flex items-center gap-1">
           <button
             type="button"

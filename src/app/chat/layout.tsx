@@ -22,7 +22,7 @@ export default function ChatLayout({
       </AuthLoading>
       <Unauthenticated>
         <div className="flex min-h-screen flex-col items-center justify-center gap-6 bg-background px-4">
-          <h1 className="text-2xl font-semibold">Welcome to Chat</h1>
+          <h1 className="text-2xl font-semibold">Welcome to Chats</h1>
           <p className="text-center text-muted-foreground">
             {isSignedIn
               ? "Connecting your account..."
