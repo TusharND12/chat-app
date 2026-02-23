@@ -17,20 +17,28 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Google Chat",
-  description: "Real-time messaging powered by Google Chat",
+  title: "Chats",
+  description: "Real-time messaging with Chats",
   icons: {
     icon: "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>💬</text></svg>",
   },
 };
+
+function getClerkPublishableKey() {
+  const raw = process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY ?? "";
+  if (!raw) return undefined;
+  if (raw.includes("=")) return raw.split("=")[1]?.trim();
+  return raw.trim();
+}
 
 export default function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const publishableKey = getClerkPublishableKey();
   return (
-    <ClerkProvider telemetry={false}>
+    <ClerkProvider publishableKey={publishableKey} telemetry={false}>
       <html lang="en" suppressHydrationWarning>
         <body
           className={`${inter.variable} ${geistMono.variable} font-sans antialiased`}
