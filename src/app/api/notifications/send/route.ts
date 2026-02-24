@@ -25,14 +25,17 @@ export async function POST(req: Request) {
     const allTokens: string[] = [];
 
     for (const userId of recipientUserIds) {
-      const doc = await admin.db.collection("fcm_tokens").doc(userId).get();
+      const docId = String(userId).trim();
+      if (!docId) continue;
+      const doc = await admin.db.collection("fcm_tokens").doc(docId).get();
       const data = doc.data();
-      const tokens = (data?.tokens as string[]) || [];
+      const raw = data?.tokens;
+      const tokens = Array.isArray(raw) ? raw.filter((t): t is string => typeof t === "string") : [];
       allTokens.push(...tokens);
     }
 
     if (allTokens.length === 0) {
-      return NextResponse.json({ ok: true, sent: 0 });
+      return NextResponse.json({ ok: true, sent: 0, tokensFound: 0 });
     }
 
     const message = {
@@ -42,7 +45,7 @@ export async function POST(req: Request) {
     };
 
     const res = await admin.messaging.sendEachForMulticast(message);
-    return NextResponse.json({ ok: true, sent: res.successCount });
+    return NextResponse.json({ ok: true, sent: res.successCount, tokensFound: message.tokens.length });
   } catch (e) {
     console.error("FCM send error:", e);
     return NextResponse.json({ error: "Send failed" }, { status: 500 });

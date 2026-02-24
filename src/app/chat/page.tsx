@@ -10,6 +10,7 @@ import { ChatArea } from "@/components/chat/ChatArea";
 import { GroupInfo } from "@/components/chat/GroupInfo";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { NotificationRegistration } from "@/components/chat/NotificationRegistration";
+import { subscribeToForegroundMessages } from "@/lib/firebase";
 import { Menu, ArrowLeft } from "lucide-react";
 import { formatRelativeTime } from "@/lib/formatTimestamp";
 import { cn } from "@/lib/utils";
@@ -42,6 +43,15 @@ export default function ChatPage() {
       // Fire and forget; actual token registration happens in NotificationRegistration
       Notification.requestPermission().catch(() => {});
     }
+  }, []);
+
+  // Foreground FCM: show notification when tab is open and a push is received
+  useEffect(() => {
+    let cleanup: (() => void) | undefined;
+    subscribeToForegroundMessages().then((unsub) => {
+      cleanup = unsub;
+    });
+    return () => cleanup?.();
   }, []);
 
   return (

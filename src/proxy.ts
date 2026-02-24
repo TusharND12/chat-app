@@ -15,6 +15,8 @@ export default clerkMiddleware(
     }
   },
   {
+    // CSP blocks connections to domains not listed here. Console errors for domains like
+    // overbridgenet.com are from browser extensions/injected scripts—do not add them.
     contentSecurityPolicy: {
       directives: {
         "script-src": ["blob:"],
@@ -23,6 +25,10 @@ export default clerkMiddleware(
           "wss://*.convex.cloud",
           "https://www.google-analytics.com",
           "https://*.google-analytics.com",
+          "https://firebaseinstallations.googleapis.com",
+          "https://*.firebaseinstallations.googleapis.com",
+          "https://fcmregistrations.googleapis.com",
+          "https://*.googleapis.com",
         ],
       },
     },

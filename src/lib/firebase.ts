@@ -1,7 +1,7 @@
 "use client";
 
 import { getApps, getApp, initializeApp, type FirebaseApp } from "firebase/app";
-import { getMessaging, getToken, isSupported, type Messaging } from "firebase/messaging";
+import { getMessaging, getToken, isSupported, onMessage, type Messaging } from "firebase/messaging";
 
 const FCM_SW_PATH = "/firebase-messaging-sw.js";
 
@@ -77,4 +77,20 @@ export async function getFcmToken(): Promise<GetFcmTokenResult> {
     if (msg.includes("messaging/permission-blocked")) return { error: "Notifications are blocked." };
     return { error: msg || "Could not get notification token." };
   }
+}
+
+/** Subscribe to foreground FCM messages (when tab is open). Shows a browser notification. Returns cleanup. */
+export async function subscribeToForegroundMessages(): Promise<() => void> {
+  const messaging = await getMessagingSafe();
+  if (!messaging) return () => {};
+  const unsub = onMessage(messaging, (payload) => {
+    const notif = (payload as { notification?: { title?: string; body?: string }; data?: { title?: string; body?: string } }).notification;
+    const data = (payload as { data?: { title?: string; body?: string } }).data;
+    const title = notif?.title ?? data?.title ?? "Chats";
+    const body = notif?.body ?? data?.body ?? "New message";
+    if (typeof window !== "undefined" && "Notification" in window && Notification.permission === "granted") {
+      new Notification(title, { body, icon: "/favicon.ico" });
+    }
+  });
+  return unsub;
 }

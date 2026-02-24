@@ -16,10 +16,13 @@ firebase.initializeApp(firebaseConfig);
 const messaging = firebase.messaging();
 
 messaging.onBackgroundMessage((payload) => {
-  const { title, body } = payload.data || {};
-  self.registration.showNotification(title || "Chats", {
-    body: body || "New message",
+  const notif = payload.notification || {};
+  const data = payload.data || {};
+  const title = notif.title || data.title || "Chats";
+  const body = notif.body || data.body || "New message";
+  self.registration.showNotification(title, {
+    body: body,
     icon: "/favicon.ico",
-    tag: payload.data?.conversationId || "chats",
+    tag: data.conversationId || "chats",
   });
 });

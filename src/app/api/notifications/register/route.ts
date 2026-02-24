@@ -9,18 +9,30 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const body = await req.json();
-    const { token, userId: convexUserId } = body as { token?: string; userId?: string };
-    if (!token || !convexUserId) {
+    let body: unknown;
+    try {
+      body = await req.json();
+    } catch {
+      return NextResponse.json({ error: "Invalid JSON body" }, { status: 400 });
+    }
+    const { token, userId: convexUserId } = (body || {}) as { token?: string; userId?: string };
+    if (!token || convexUserId == null || convexUserId === "") {
       return NextResponse.json({ error: "Missing token or userId" }, { status: 400 });
     }
 
     const admin = getFirebaseAdmin();
     if (!admin) {
-      return NextResponse.json({ error: "Firebase not configured" }, { status: 503 });
+      return NextResponse.json(
+        { error: "Firebase not configured. Set FIREBASE_SERVICE_ACCOUNT_JSON in .env.local and restart." },
+        { status: 503 }
+      );
     }
 
-    const docRef = admin.db.collection("fcm_tokens").doc(convexUserId);
+    const docId = String(convexUserId).trim();
+    if (!docId) {
+      return NextResponse.json({ error: "Invalid userId" }, { status: 400 });
+    }
+    const docRef = admin.db.collection("fcm_tokens").doc(docId);
     await docRef.set(
       { tokens: FieldValue.arrayUnion(token), updatedAt: Date.now() },
       { merge: true }
@@ -29,6 +41,7 @@ export async function POST(req: Request) {
     return NextResponse.json({ ok: true });
   } catch (e) {
     console.error("FCM register error:", e);
-    return NextResponse.json({ error: "Registration failed" }, { status: 500 });
+    const message = e instanceof Error ? e.message : "Registration failed";
+    return NextResponse.json({ error: message }, { status: 500 });
   }
 }

@@ -5,7 +5,7 @@ import { useQuery, useMutation } from "convex/react";
 import { api } from "../../../convex/_generated/api";
 import { getFcmToken } from "@/lib/firebase";
 import { Button } from "@/components/ui/button";
-import { Bell, BellOff, BellRing } from "lucide-react";
+import { Bell, BellOff, BellRing, Loader2 } from "lucide-react";
 
 /**
  * Notifications control: always visible bell. Click to enable or see status.
@@ -23,14 +23,42 @@ export function NotificationRegistration() {
     }
   }, []);
 
+  useEffect(() => {
+    if (currentUser !== undefined && error === "Loading…") setError(null);
+  }, [currentUser, error]);
+
+  const handleClick = () => {
+    if (typeof window === "undefined" || !("Notification" in window)) {
+      setError("Notifications not supported.");
+      return;
+    }
+    if (currentUser === undefined) {
+      setError("Loading…");
+      return;
+    }
+    if (!currentUser?._id) {
+      setError("Sign in to enable notifications.");
+      return;
+    }
+    if (permission === "denied") {
+      setError("Notifications blocked. Allow them in your browser settings and reload.");
+      return;
+    }
+    if (permission === "granted") {
+      requestAndRegister();
+      return;
+    }
+    requestAndRegister();
+  };
+
   const requestAndRegister = async () => {
-    if (!currentUser?._id || typeof window === "undefined" || !("Notification" in window)) return;
+    if (!currentUser?._id) return;
     setRegistering(true);
     setError(null);
     try {
       const perm = await Notification.requestPermission();
+      setPermission(perm);
       if (perm !== "granted") {
-        setPermission(perm);
         setRegistering(false);
         return;
       }
@@ -41,26 +69,34 @@ export function NotificationRegistration() {
         return;
       }
       const { token } = result;
-      await registerToken({ token, userAgent: navigator.userAgent });
-      const res = await fetch("/api/notifications/register", {
+      const apiUrl = "/api/notifications/register";
+      const res = await fetch(apiUrl, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ token, userId: currentUser._id }),
       });
       if (!res.ok) {
         const data = await res.json().catch(() => ({}));
-        setError((data as { error?: string }).error || `Server error (${res.status}). Check FIREBASE_SERVICE_ACCOUNT_JSON.`);
+        setError((data as { error?: string }).error || `Server error (${res.status}). Check FIREBASE_SERVICE_ACCOUNT_JSON in .env.local and restart.`);
         setRegistering(false);
         return;
       }
-      setPermission("granted");
+      try {
+        await registerToken({ token, userAgent: navigator.userAgent });
+      } catch {
+        // Token is already in Firestore; Convex sync is optional
+      }
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Something went wrong.");
+      const msg = e instanceof Error ? e.message : "Something went wrong.";
+      if (msg === "Failed to fetch") {
+        setError("Network error. Check dev server is running and FIREBASE_SERVICE_ACCOUNT_JSON in .env.local.");
+      } else {
+        setError(msg);
+      }
     }
     setRegistering(false);
   };
 
-  const canRequest = permission === "default" || permission === null;
   const isGranted = permission === "granted";
   const isDenied = permission === "denied";
   const title = error
@@ -78,13 +114,15 @@ export function NotificationRegistration() {
         variant="outline"
         size="icon"
         className={`h-9 w-9 shrink-0 rounded-full border-2 ${error ? "border-destructive/50" : ""}`}
-        onClick={canRequest ? requestAndRegister : undefined}
+        onClick={handleClick}
         disabled={registering}
         title={title}
         aria-label="Notifications"
         aria-describedby={error ? "notification-error" : undefined}
       >
-        {isGranted ? (
+        {registering ? (
+          <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+        ) : isGranted ? (
           <BellRing className="h-5 w-5 text-primary" />
         ) : isDenied ? (
           <BellOff className="h-5 w-5 text-muted-foreground" />

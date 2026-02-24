@@ -74,15 +74,18 @@ export function MessageInput({ conversationId, replyingTo, onCancelReply }: Mess
       });
       onCancelReply?.();
       if (otherParticipantIds.length > 0 && currentUser?.name) {
+        const recipientIds = otherParticipantIds.map((id) => String(id));
         fetch("/api/notifications/send", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
-            recipientUserIds: otherParticipantIds,
+            recipientUserIds: recipientIds,
             senderName: currentUser.name,
             body: text,
           }),
-        }).catch(() => {});
+        }).catch((err) => {
+          console.warn("Notification send failed:", err);
+        });
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to send");
