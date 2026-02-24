@@ -18,11 +18,29 @@ const messaging = firebase.messaging();
 messaging.onBackgroundMessage((payload) => {
   const notif = payload.notification || {};
   const data = payload.data || {};
-  const title = notif.title || data.title || "Chats";
-  const body = notif.body || data.body || "New message";
+  const title = (notif.title || data.title || "Chats").toString();
+  const body = (notif.body || data.body || "New message").toString();
+  const url = self.location.origin + "/chat";
   self.registration.showNotification(title, {
     body: body,
     icon: "/favicon.ico",
-    tag: data.conversationId || "chats",
+    tag: (data.conversationId || "chats").toString(),
+    data: { url: url },
+    requireInteraction: false,
   });
+});
+
+self.addEventListener("notificationclick", (event) => {
+  event.notification.close();
+  const url = event.notification.data?.url || self.location.origin + "/chat";
+  event.waitUntil(
+    self.clients.matchAll({ type: "window", includeUncontrolled: true }).then((clientList) => {
+      if (clientList.length > 0) {
+        clientList[0].focus();
+        clientList[0].navigate(url);
+      } else if (self.clients.openWindow) {
+        self.clients.openWindow(url);
+      }
+    })
+  );
 });

@@ -35,17 +35,31 @@ export async function POST(req: Request) {
     }
 
     if (allTokens.length === 0) {
+      console.warn("FCM send: no tokens found for recipientUserIds", recipientUserIds);
       return NextResponse.json({ ok: true, sent: 0, tokensFound: 0 });
     }
 
+    const tokens = [...new Set(allTokens)];
     const message = {
       notification: { title, body: bodyText },
-      data: { title, body: bodyText },
-      tokens: [...new Set(allTokens)],
+      data: {
+        title: String(title),
+        body: String(bodyText),
+      },
+      tokens,
+      webpush: {
+        notification: { title, body: bodyText },
+        fcmOptions: { link: "/chat" },
+      },
     };
 
     const res = await admin.messaging.sendEachForMulticast(message);
-    return NextResponse.json({ ok: true, sent: res.successCount, tokensFound: message.tokens.length });
+    if (res.failureCount > 0) {
+      res.responses.forEach((r, i) => {
+        if (!r.success) console.warn("FCM send failed for token", i, r.error?.message);
+      });
+    }
+    return NextResponse.json({ ok: true, sent: res.successCount, tokensFound: tokens.length });
   } catch (e) {
     console.error("FCM send error:", e);
     return NextResponse.json({ error: "Send failed" }, { status: 500 });

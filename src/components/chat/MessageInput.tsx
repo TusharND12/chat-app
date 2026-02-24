@@ -75,17 +75,23 @@ export function MessageInput({ conversationId, replyingTo, onCancelReply }: Mess
       onCancelReply?.();
       if (otherParticipantIds.length > 0 && currentUser?.name) {
         const recipientIds = otherParticipantIds.map((id) => String(id));
-        fetch("/api/notifications/send", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            recipientUserIds: recipientIds,
-            senderName: currentUser.name,
-            body: text,
-          }),
-        }).catch((err) => {
+        try {
+          const notifRes = await fetch("/api/notifications/send", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              recipientUserIds: recipientIds,
+              senderName: currentUser.name,
+              body: text,
+            }),
+          });
+          const notifData = await notifRes.json().catch(() => ({}));
+          if (notifRes.ok && (notifData as { tokensFound?: number }).tokensFound === 0) {
+            console.debug("Push: no devices registered for recipient(s). They can enable notifications with the bell.");
+          }
+        } catch (err) {
           console.warn("Notification send failed:", err);
-        });
+        }
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to send");
@@ -209,9 +215,6 @@ export function MessageInput({ conversationId, replyingTo, onCancelReply }: Mess
             <Send className="size-5" />
           </button>
         </div>
-        <p className="mt-1 px-1 text-[10px] text-muted-foreground/60">
-          *bold* _italic_ `code` ~strike~ · Shift+Enter for new line
-        </p>
       </div>
     </div>
   );

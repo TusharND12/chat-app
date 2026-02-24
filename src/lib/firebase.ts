@@ -26,8 +26,21 @@ export function getFirebaseApp(): FirebaseApp | null {
   return getApps().length ? getApp() : initializeApp(config);
 }
 
+function getPushUnsupportedReason(): string | null {
+  if (typeof window === "undefined") return "Not in browser.";
+  if (!window.isSecureContext) {
+    return "Use HTTPS: open https://localhost:3000 (run npm run dev:https first).";
+  }
+  if (!("serviceWorker" in navigator)) return "This browser doesn't support service workers.";
+  if (!("PushManager" in window)) return "This browser doesn't support push notifications.";
+  if (!("Notification" in window)) return "This browser doesn't support notifications.";
+  return null;
+}
+
 export async function getMessagingSafe(): Promise<Messaging | null> {
   if (typeof window === "undefined") return null;
+  const reason = getPushUnsupportedReason();
+  if (reason) return null;
   const supported = await isSupported();
   if (!supported) return null;
   const app = getFirebaseApp();
@@ -63,8 +76,10 @@ export type GetFcmTokenResult = { token: string } | { error: string };
 
 export async function getFcmToken(): Promise<GetFcmTokenResult> {
   if (!VAPID_KEY?.trim()) return { error: "Missing VAPID key. Add NEXT_PUBLIC_FIREBASE_VAPID_KEY to your env." };
+  const unsupportedReason = getPushUnsupportedReason();
+  if (unsupportedReason) return { error: unsupportedReason };
   const messaging = await getMessagingSafe();
-  if (!messaging) return { error: "Push not supported in this browser (use HTTPS and allow notifications)." };
+  if (!messaging) return { error: "Push not supported in this browser. Try Chrome/Edge with https://localhost or HTTPS." };
   const swReg = await getFcmServiceWorkerRegistration();
   if (!swReg) return { error: "Could not register notification service worker. Check that /firebase-messaging-sw.js is served." };
   try {

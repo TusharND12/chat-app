@@ -23,7 +23,10 @@ export async function POST(req: Request) {
     const admin = getFirebaseAdmin();
     if (!admin) {
       return NextResponse.json(
-        { error: "Firebase not configured. Set FIREBASE_SERVICE_ACCOUNT_JSON in .env.local and restart." },
+        {
+          error:
+            "Firebase not configured. Set FIREBASE_SERVICE_ACCOUNT_JSON in env (Vercel: Project Settings → Environment Variables).",
+        },
         { status: 503 }
       );
     }

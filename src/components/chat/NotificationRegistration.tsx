@@ -131,13 +131,23 @@ export function NotificationRegistration() {
         )}
       </Button>
       {error && (
-        <p
+        <div
           id="notification-error"
-          className="absolute right-0 top-full z-50 mt-1 max-w-[240px] rounded border border-border bg-popover px-2 py-1.5 text-xs text-destructive shadow-md"
+          className="absolute right-0 top-full z-50 mt-1 max-w-[260px] rounded border border-border bg-popover px-2 py-1.5 text-xs shadow-md"
           role="alert"
         >
-          {error}
-        </p>
+          <p className="text-destructive">{error}</p>
+          {error.includes("localhost:3000") && (
+            <a
+              href="https://localhost:3000"
+              className="mt-1 block font-medium text-primary underline hover:no-underline"
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              Open with HTTPS →
+            </a>
+          )}
+        </div>
       )}
     </div>
   );
