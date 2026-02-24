@@ -20,6 +20,7 @@ export default clerkMiddleware(
     contentSecurityPolicy: {
       directives: {
         "script-src": ["blob:"],
+        "img-src": ["'self'", "data:", "blob:", "https://img.clerk.com", "https://images.clerkstage.dev"],
         "connect-src": [
           "https://*.convex.cloud",
           "wss://*.convex.cloud",
