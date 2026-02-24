@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useCallback, useRef, useEffect } from "react";
-import { useMutation } from "convex/react";
+import { useMutation, useQuery } from "convex/react";
 import { api } from "../../../convex/_generated/api";
 import type { Id } from "../../../convex/_generated/dataModel";
 import { Send, Smile, X, RotateCcw } from "lucide-react";
@@ -19,6 +19,8 @@ export function MessageInput({ conversationId, replyingTo, onCancelReply }: Mess
   const [showEmoji, setShowEmoji] = useState(false);
   const sendMessage = useMutation(api.messages.send);
   const setTyping = useMutation(api.typing.setTyping);
+  const otherParticipantIds = useQuery(api.fcmTokens.getOtherParticipantIds, { conversationId }) ?? [];
+  const currentUser = useQuery(api.users.getCurrentUser);
   const typingTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
@@ -71,6 +73,17 @@ export function MessageInput({ conversationId, replyingTo, onCancelReply }: Mess
         ...(replyingTo && { replyToMessageId: replyingTo.messageId }),
       });
       onCancelReply?.();
+      if (otherParticipantIds.length > 0 && currentUser?.name) {
+        fetch("/api/notifications/send", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            recipientUserIds: otherParticipantIds,
+            senderName: currentUser.name,
+            body: text,
+          }),
+        }).catch(() => {});
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to send");
       setContent(text);

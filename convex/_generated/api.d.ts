@@ -10,6 +10,7 @@
 
 import type * as conversationParticipants from "../conversationParticipants.js";
 import type * as conversations from "../conversations.js";
+import type * as fcmTokens from "../fcmTokens.js";
 import type * as messages from "../messages.js";
 import type * as presence from "../presence.js";
 import type * as reactions from "../reactions.js";
@@ -25,6 +26,7 @@ import type {
 declare const fullApi: ApiFromModules<{
   conversationParticipants: typeof conversationParticipants;
   conversations: typeof conversations;
+  fcmTokens: typeof fcmTokens;
   messages: typeof messages;
   presence: typeof presence;
   reactions: typeof reactions;

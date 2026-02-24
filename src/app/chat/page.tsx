@@ -9,6 +9,7 @@ import { Sidebar } from "@/components/chat/Sidebar";
 import { ChatArea } from "@/components/chat/ChatArea";
 import { GroupInfo } from "@/components/chat/GroupInfo";
 import { ThemeToggle } from "@/components/ThemeToggle";
+import { NotificationRegistration } from "@/components/chat/NotificationRegistration";
 import { Menu, ArrowLeft } from "lucide-react";
 import { formatRelativeTime } from "@/lib/formatTimestamp";
 import { cn } from "@/lib/utils";
@@ -33,6 +34,15 @@ export default function ChatPage() {
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [openSidebar, closeSidebar]);
+
+  // Ask for notification permission once on first load (shows browser Allow/Block popup)
+  useEffect(() => {
+    if (typeof window === "undefined" || !("Notification" in window)) return;
+    if (Notification.permission === "default") {
+      // Fire and forget; actual token registration happens in NotificationRegistration
+      Notification.requestPermission().catch(() => {});
+    }
+  }, []);
 
   return (
     <div className="flex h-screen overflow-hidden bg-background">
@@ -104,6 +114,7 @@ export default function ChatPage() {
           )}
 
           <div className="ml-auto flex items-center gap-1">
+            <NotificationRegistration />
             <ThemeToggle className="shrink-0" />
             <UserButton afterSignOutUrl="/" />
           </div>
