@@ -214,9 +214,6 @@ function EmptyChatState({ onStartChat }: { onStartChat: () => void }) {
       >
         Start a chat
       </button>
-      <p className="text-xs text-muted-foreground">
-        Press <kbd className="rounded bg-muted px-1.5 py-0.5 text-xs font-mono">Ctrl+K</kbd> to search
-      </p>
     </div>
   );
 }
