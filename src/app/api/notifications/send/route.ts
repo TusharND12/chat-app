@@ -48,7 +48,12 @@ export async function POST(req: Request) {
       },
       tokens,
       webpush: {
-        notification: { title, body: bodyText },
+        notification: {
+          title,
+          body: bodyText,
+          icon: "/favicon.ico",
+          requireInteraction: false,
+        },
         fcmOptions: { link: "/chat" },
       },
     };

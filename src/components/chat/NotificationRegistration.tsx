@@ -55,17 +55,20 @@ export function NotificationRegistration() {
     if (!currentUser?._id) return;
     setRegistering(true);
     setError(null);
+    const timeoutMs = 20000;
+    const timeoutId = setTimeout(() => {
+      setError("Timed out. Reload and try again, or use Chrome/Edge on HTTPS.");
+      setRegistering(false);
+    }, timeoutMs);
     try {
       const perm = await Notification.requestPermission();
       setPermission(perm);
       if (perm !== "granted") {
-        setRegistering(false);
         return;
       }
       const result = await getFcmToken();
       if ("error" in result) {
         setError(result.error);
-        setRegistering(false);
         return;
       }
       const { token } = result;
@@ -77,10 +80,10 @@ export function NotificationRegistration() {
       });
       if (!res.ok) {
         const data = await res.json().catch(() => ({}));
-        setError((data as { error?: string }).error || `Server error (${res.status}). Check FIREBASE_SERVICE_ACCOUNT_JSON in .env.local and restart.`);
-        setRegistering(false);
+        setError((data as { error?: string }).error || `Server error (${res.status}). Check FIREBASE_SERVICE_ACCOUNT_JSON.`);
         return;
       }
+      setPermission("granted");
       try {
         await registerToken({ token, userAgent: navigator.userAgent });
       } catch {
@@ -89,12 +92,14 @@ export function NotificationRegistration() {
     } catch (e) {
       const msg = e instanceof Error ? e.message : "Something went wrong.";
       if (msg === "Failed to fetch") {
-        setError("Network error. Check dev server is running and FIREBASE_SERVICE_ACCOUNT_JSON in .env.local.");
+        setError("Network error. Check dev server and FIREBASE_SERVICE_ACCOUNT_JSON.");
       } else {
         setError(msg);
       }
+    } finally {
+      clearTimeout(timeoutId);
+      setRegistering(false);
     }
-    setRegistering(false);
   };
 
   const isGranted = permission === "granted";

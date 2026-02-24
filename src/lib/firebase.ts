@@ -41,10 +41,21 @@ export async function getMessagingSafe(): Promise<Messaging | null> {
   if (typeof window === "undefined") return null;
   const reason = getPushUnsupportedReason();
   if (reason) return null;
-  const supported = await isSupported();
-  if (!supported) return null;
   const app = getFirebaseApp();
   if (!app) return null;
+  try {
+    const supported = await isSupported();
+    if (!supported) return null;
+    return getMessaging(app);
+  } catch {
+    return null;
+  }
+}
+
+/** Get messaging without isSupported() check - use when we want to try getToken anyway. */
+function getMessagingOrThrow(): Messaging {
+  const app = getFirebaseApp();
+  if (!app) throw new Error("Firebase not configured.");
   return getMessaging(app);
 }
 
@@ -78,10 +89,14 @@ export async function getFcmToken(): Promise<GetFcmTokenResult> {
   if (!VAPID_KEY?.trim()) return { error: "Missing VAPID key. Add NEXT_PUBLIC_FIREBASE_VAPID_KEY to your env." };
   const unsupportedReason = getPushUnsupportedReason();
   if (unsupportedReason) return { error: unsupportedReason };
-  const messaging = await getMessagingSafe();
-  if (!messaging) return { error: "Push not supported in this browser. Try Chrome/Edge with https://localhost or HTTPS." };
   const swReg = await getFcmServiceWorkerRegistration();
   if (!swReg) return { error: "Could not register notification service worker. Check that /firebase-messaging-sw.js is served." };
+  let messaging: Messaging;
+  try {
+    messaging = getMessagingOrThrow();
+  } catch (e) {
+    return { error: e instanceof Error ? e.message : "Firebase not configured." };
+  }
   try {
     const token = await getToken(messaging, { vapidKey: VAPID_KEY, serviceWorkerRegistration: swReg });
     if (!token) return { error: "Could not get notification token." };
@@ -90,6 +105,8 @@ export async function getFcmToken(): Promise<GetFcmTokenResult> {
     const msg = e instanceof Error ? e.message : String(e);
     if (msg.includes("messaging/failed-service-worker-registration")) return { error: "Service worker failed. Reload the page and try again." };
     if (msg.includes("messaging/permission-blocked")) return { error: "Notifications are blocked." };
+    if (msg.includes("indexeddb") || msg.includes("IndexedDB")) return { error: "Enable site data (cookies/storage) for this site and reload." };
+    if (msg.includes("supported") || msg.includes("not supported")) return { error: "Use Chrome or Edge on desktop or Android (HTTPS). Not supported in iOS Safari or private mode." };
     return { error: msg || "Could not get notification token." };
   }
 }

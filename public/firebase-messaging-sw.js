@@ -16,18 +16,27 @@ firebase.initializeApp(firebaseConfig);
 const messaging = firebase.messaging();
 
 messaging.onBackgroundMessage((payload) => {
-  const notif = payload.notification || {};
-  const data = payload.data || {};
-  const title = (notif.title || data.title || "Chats").toString();
-  const body = (notif.body || data.body || "New message").toString();
-  const url = self.location.origin + "/chat";
-  self.registration.showNotification(title, {
-    body: body,
-    icon: "/favicon.ico",
-    tag: (data.conversationId || "chats").toString(),
-    data: { url: url },
-    requireInteraction: false,
-  });
+  try {
+    const notif = payload.notification || {};
+    const data = payload.data || {};
+    const title = String(notif.title || data.title || "Chats");
+    const body = String(notif.body || data.body || "New message");
+    const origin = self.location.origin;
+    const url = origin + "/chat";
+    const icon = origin + "/favicon.ico";
+    const options = {
+      body: body,
+      icon: icon,
+      tag: String(data.conversationId || "chats"),
+      data: { url: url },
+      requireInteraction: false,
+      silent: false,
+      vibrate: [200, 100, 200],
+    };
+    self.registration.showNotification(title, options);
+  } catch (err) {
+    console.error("FCM showNotification failed:", err);
+  }
 });
 
 self.addEventListener("notificationclick", (event) => {
